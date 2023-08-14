@@ -1,6 +1,6 @@
 {
-  "name": "livekit-client",
-  "version": "1.12.3",
+  "name": "@playback-sports/livekit-client",
+  "version": "1.12.3-playback-1",
   "description": "JavaScript/TypeScript client SDK for LiveKit",
   "main": "./dist/livekit-client.umd.js",
   "unpkg": "./dist/livekit-client.umd.js",
@@ -32,7 +32,7 @@
       ]
     }
   },
-  "repository": "git@github.com:livekit/client-sdk-js.git",
+  "repository": "git@github.com:playback-sports/livekit-client-sdk-js.git",
   "author": "David Zhao <david@davidzhao.com>",
   "license": "Apache-2.0",
   "scripts": {

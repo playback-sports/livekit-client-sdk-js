@@ -19,7 +19,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, protoInt64 } from "@bufbuild/protobuf";
-import { ClientConfiguration, ConnectionQuality, DisconnectReason, Encryption_Type, ParticipantInfo, ParticipantTracks, Room, ServerInfo, SpeakerInfo, SubscriptionError, TrackInfo, TrackSource, TrackType, VideoLayer, VideoQuality } from "./livekit_models_pb.js";
+import { ClientConfiguration, ConnectionQuality, DisconnectReason, Encryption_Type, ParticipantInfo, ParticipantTracks, Room, ServerInfo, SpeakerInfo, SubscriptionError, TrackInfo, TrackSource, TrackType, VideoLayer, VideoQuality } from "./livekit_models_pb";
 
 /**
  * @generated from enum livekit.SignalTarget

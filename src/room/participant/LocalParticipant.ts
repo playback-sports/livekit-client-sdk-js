@@ -658,27 +658,23 @@ export default class LocalParticipant extends Participant {
         width: 0,
         height: 0,
       };
-      if (opts.width && opts.height) {
-        dims.width = opts.width;
-        dims.height = opts.height;
-      } else {
-        try {
-          dims = await track.waitForDimensions();
-          log.info('track dimensions', dims);
-        } catch (e) {
-          // use defaults, it's quite painful for congestion control without simulcast
-          // so using default dims according to publish settings
-          const defaultRes =
-            this.roomOptions.videoCaptureDefaults?.resolution ?? VideoPresets.h720.resolution;
-          dims = {
-            width: defaultRes.width,
-            height: defaultRes.height,
-          };
-          // log failure
-          log.error('could not determine track dimensions, using defaults', dims);
-        }
+      try {
+        dims = await track.waitForDimensions();
+        log.info('track dimensions', dims);
+      } catch (e) {
+        // use defaults, it's quite painful for congestion control without simulcast
+        // so using default dims according to publish settings
+        const defaultRes =
+          this.roomOptions.videoCaptureDefaults?.resolution ?? VideoPresets.h720.resolution;
+        dims = {
+          width: defaultRes.width,
+          height: defaultRes.height,
+        };
+        // log failure
+        log.error('could not determine track dimensions, using defaults', dims);
       }
       // width and height should be defined for video
+      log.debug('dims', dims);
       req.width = dims.width;
       req.height = dims.height;
       // for svc codecs, disable simulcast and use vp8 for backup codec

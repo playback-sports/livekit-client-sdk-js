@@ -159,10 +159,14 @@ export function computeVideoEncodings(
       sortPresets(options?.videoSimulcastLayers) ?? defaultSimulcastLayers(isScreenShare, original);
   }
   let midPreset: VideoPreset | undefined;
+  let highPreset: VideoPreset | undefined;
   if (presets.length > 0) {
     const lowPreset = presets[0];
     if (presets.length > 1) {
       [, midPreset] = presets;
+    }
+    if (presets.length > 1) {
+      [, , highPreset] = presets;
     }
 
     // NOTE:
@@ -176,13 +180,13 @@ export function computeVideoEncodings(
     //      based on other conditions.
     const size = Math.max(width, height);
     if (size >= 960 && midPreset) {
-      return encodingsFromPresets(width, height, [lowPreset, midPreset, original]);
+      return encodingsFromPresets(width, height, [lowPreset, midPreset, highPreset ?? original]);
     }
     if (size >= 480) {
-      return encodingsFromPresets(width, height, [lowPreset, original]);
+      return encodingsFromPresets(width, height, [lowPreset, highPreset ?? original]);
     }
   }
-  return encodingsFromPresets(width, height, [original]);
+  return encodingsFromPresets(width, height, [highPreset ?? original]);
 }
 
 export function computeTrackBackupEncodings(
@@ -306,9 +310,15 @@ function encodingsFromPresets(
     }
     const size = Math.min(width, height);
     const rid = videoRids[idx];
+    log.debug('scaleResolutionDownBy', [
+      size,
+      preset.width,
+      preset.height,
+      size / Math.min(preset.width, preset.height),
+    ]);
     const encoding: RTCRtpEncodingParameters = {
       rid,
-      scaleResolutionDownBy: Math.max(1, size / Math.min(preset.width, preset.height)),
+      scaleResolutionDownBy: size / Math.min(preset.width, preset.height),
       maxBitrate: preset.encoding.maxBitrate,
     };
     if (preset.encoding.maxFramerate) {

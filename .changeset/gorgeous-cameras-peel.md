@@ -2,4 +2,4 @@
 "livekit-client": patch
 ---
 
-Add support for audio processors
+Disable opus RED when using E2EE

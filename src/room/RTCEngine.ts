@@ -191,6 +191,7 @@ export default class RTCEngine extends (EventEmitter as new () => TypedEventEmit
     this.url = url;
     this.token = token;
     this.signalOpts = opts;
+    this.maxJoinAttempts = opts.maxRetries;
     try {
       this.joinAttempts += 1;
 
@@ -210,7 +211,6 @@ export default class RTCEngine extends (EventEmitter as new () => TypedEventEmit
       }
 
       this.clientConfiguration = joinResponse.clientConfiguration;
-
       return joinResponse;
     } catch (e) {
       if (e instanceof ConnectionError) {

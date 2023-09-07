@@ -104,6 +104,10 @@ export default class LocalParticipant extends Participant {
     return this.microphoneError;
   }
 
+  get isE2EEEnabled(): boolean {
+    return this.encryptionType !== Encryption_Type.NONE;
+  }
+
   getTrack(source: Track.Source): LocalTrackPublication | undefined {
     const track = super.getTrack(source);
     if (track) {
@@ -645,7 +649,7 @@ export default class LocalParticipant extends Participant {
       disableDtx: !(opts.dtx ?? true),
       encryption: this.encryptionType,
       stereo: isStereo,
-      // disableRed: !(opts.red ?? true),
+      disableRed: this.isE2EEEnabled || !(opts.red ?? true),
     });
 
     // compute encodings and layers for video
@@ -682,6 +686,9 @@ export default class LocalParticipant extends Participant {
 
         // set up backup
         if (opts.videoCodec && opts.backupCodec && opts.videoCodec !== opts.backupCodec.codec) {
+          if (!this.roomOptions.dynacast) {
+            this.roomOptions.dynacast = true;
+          }
           const simOpts = { ...opts };
           simOpts.simulcast = true;
           simEncodings = computeTrackBackupEncodings(track, opts.backupCodec.codec, simOpts);

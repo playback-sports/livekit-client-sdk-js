@@ -209,10 +209,10 @@ class Room extends (EventEmitter as new () => TypedEmitter<RoomEventCallbacks>) 
    */
   async setE2EEEnabled(enabled: boolean) {
     if (this.e2eeManager) {
-      await Promise.all([
-        this.localParticipant.setE2EEEnabled(enabled),
-        this.e2eeManager.setParticipantCryptorEnabled(enabled),
-      ]);
+      await Promise.all([this.localParticipant.setE2EEEnabled(enabled)]);
+      if (this.localParticipant.identity !== '') {
+        this.e2eeManager.setParticipantCryptorEnabled(enabled, this.localParticipant.identity);
+      }
     } else {
       throw Error('e2ee not configured, please set e2ee settings within the room options');
     }
@@ -230,7 +230,7 @@ class Room extends (EventEmitter as new () => TypedEmitter<RoomEventCallbacks>) 
           this.emit(RoomEvent.ParticipantEncryptionStatusChanged, enabled, participant);
         },
       );
-      this.e2eeManager.on(EncryptionEvent.Error, (error) =>
+      this.e2eeManager.on(EncryptionEvent.EncryptionError, (error) =>
         this.emit(RoomEvent.EncryptionError, error),
       );
       this.e2eeManager?.setup(this);
@@ -502,6 +502,7 @@ class Room extends (EventEmitter as new () => TypedEmitter<RoomEventCallbacks>) 
           typeof roomOptions.adaptiveStream === 'object' ? true : roomOptions.adaptiveStream,
         maxRetries: connectOptions.maxRetries,
         e2eeEnabled: !!this.e2eeManager,
+        websocketTimeout: connectOptions.websocketTimeout,
       },
       abortController.signal,
     );
@@ -799,7 +800,6 @@ class Room extends (EventEmitter as new () => TypedEmitter<RoomEventCallbacks>) 
    * - `getUserMedia`
    */
   async startAudio() {
-    await this.acquireAudioContext();
     const elements: Array<HTMLMediaElement> = [];
     const browser = getBrowser();
     if (browser && browser.os === 'iOS') {
@@ -848,12 +848,13 @@ class Room extends (EventEmitter as new () => TypedEmitter<RoomEventCallbacks>) 
     });
 
     try {
-      await Promise.all(
-        elements.map((e) => {
+      await Promise.all([
+        this.acquireAudioContext(),
+        ...elements.map((e) => {
           e.muted = false;
           return e.play();
         }),
-      );
+      ]);
       this.handleAudioPlaybackStarted();
     } catch (err) {
       this.handleAudioPlaybackFailed(err);
@@ -1024,7 +1025,15 @@ class Room extends (EventEmitter as new () => TypedEmitter<RoomEventCallbacks>) 
       log.warn('tried to create RemoteParticipant for local participant');
       return;
     }
-    const participant = this.getOrCreateParticipant(participantId);
+
+    const participant = this.participants.get(participantId) as RemoteParticipant | undefined;
+
+    if (!participant) {
+      log.error(
+        `Tried to add a track for a participant, that's not present. Sid: ${participantId}`,
+      );
+      return;
+    }
 
     let adaptiveStreamSettings: AdaptiveStreamSettings | undefined;
     if (this.options.adaptiveStream) {
@@ -1444,20 +1453,17 @@ class Room extends (EventEmitter as new () => TypedEmitter<RoomEventCallbacks>) 
     return participant;
   }
 
-  private getOrCreateParticipant(id: string, info?: ParticipantInfo): RemoteParticipant {
+  private getOrCreateParticipant(id: string, info: ParticipantInfo): RemoteParticipant {
     if (this.participants.has(id)) {
       return this.participants.get(id) as RemoteParticipant;
     }
-    // it's possible for the RTC track to arrive before signaling data
-    // when this happens, we'll create the participant and make the track work
     const participant = this.createParticipant(id, info);
     this.participants.set(id, participant);
-    if (info) {
-      this.identityToSid.set(info.identity, info.sid);
-      // if we have valid info and the participant wasn't in the map before, we can assume the participant is new
-      // firing here to make sure that `ParticipantConnected` fires before the initial track events
-      this.emitWhenConnected(RoomEvent.ParticipantConnected, participant);
-    }
+
+    this.identityToSid.set(info.identity, info.sid);
+    // if we have valid info and the participant wasn't in the map before, we can assume the participant is new
+    // firing here to make sure that `ParticipantConnected` fires before the initial track events
+    this.emitWhenConnected(RoomEvent.ParticipantConnected, participant);
 
     // also forward events
     // trackPublished is only fired for tracks added after both local participant

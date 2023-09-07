@@ -109,6 +109,10 @@ export interface TrackPublishOptions extends TrackPublishDefaults {
    * Source of track, camera, microphone, or screen
    */
   source?: Track.Source;
+
+  width?: number;
+
+  height?: number;
 }
 
 export interface CreateLocalTracksOptions {

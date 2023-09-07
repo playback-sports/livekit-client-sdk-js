@@ -506,6 +506,7 @@ export default class LocalParticipant extends Participant {
         };
       }
     }
+    log.debug('publish track default constraints', defaultConstraints);
     // convert raw media track into audio or video track
     if (track instanceof MediaStreamTrack) {
       switch (track.kind) {
@@ -579,6 +580,7 @@ export default class LocalParticipant extends Participant {
     if (opts.source) {
       track.source = opts.source;
     }
+    log.debug('publish options', opts);
     const publishPromise = this.publish(track, opts, isStereo);
     this.pendingPublishPromises.set(track, publishPromise);
     try {
@@ -656,19 +658,25 @@ export default class LocalParticipant extends Participant {
         width: 0,
         height: 0,
       };
-      try {
-        dims = await track.waitForDimensions();
-      } catch (e) {
-        // use defaults, it's quite painful for congestion control without simulcast
-        // so using default dims according to publish settings
-        const defaultRes =
-          this.roomOptions.videoCaptureDefaults?.resolution ?? VideoPresets.h720.resolution;
-        dims = {
-          width: defaultRes.width,
-          height: defaultRes.height,
-        };
-        // log failure
-        log.error('could not determine track dimensions, using defaults', dims);
+      if (opts.width && opts.height) {
+        dims.width = opts.width;
+        dims.height = opts.height;
+      } else {
+        try {
+          dims = await track.waitForDimensions();
+          log.info('track dimensions', dims);
+        } catch (e) {
+          // use defaults, it's quite painful for congestion control without simulcast
+          // so using default dims according to publish settings
+          const defaultRes =
+            this.roomOptions.videoCaptureDefaults?.resolution ?? VideoPresets.h720.resolution;
+          dims = {
+            width: defaultRes.width,
+            height: defaultRes.height,
+          };
+          // log failure
+          log.error('could not determine track dimensions, using defaults', dims);
+        }
       }
       // width and height should be defined for video
       req.width = dims.width;
@@ -723,6 +731,8 @@ export default class LocalParticipant extends Participant {
         encodings,
         isSVCCodec(opts.videoCodec),
       );
+      log.debug('publish encodings', encodings);
+      log.debug('publish layers', req.layers);
     } else if (track.kind === Track.Kind.Audio) {
       encodings = [
         {

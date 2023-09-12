@@ -1,6 +1,6 @@
 {
   "name": "@playback-sports/livekit-client",
-  "version": "1.13.2-playback-1",
+  "version": "1.13.2-playback-2",
   "description": "JavaScript/TypeScript client SDK for LiveKit",
   "main": "./dist/livekit-client.umd.js",
   "unpkg": "./dist/livekit-client.umd.js",
